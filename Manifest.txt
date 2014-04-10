@@ -1,0 +1,12 @@
+.autotest
+History.rdoc
+Manifest.txt
+README.rdoc
+Rakefile
+bin/autotest
+lib/autotest.rb
+lib/minitest/autotest.rb
+lib/minitest/autotest_plugin.rb
+lib/minitest/server.rb
+test/test_minitest/test_autorun.rb
+test/test_minitest/test_good.rb

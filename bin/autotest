@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby -w
+
+require 'autotest'
+
+Autotest.parse_options
+Autotest.run
