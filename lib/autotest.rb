@@ -1,4 +1,3 @@
-require "pp" # HACK
 require "find"
 require "minitest/server"
 require "rbconfig"
@@ -58,7 +57,11 @@ require "rbconfig"
 
 class Autotest
 
-  TOPDIR = Dir.pwd + "/"
+  T0 = Time.at 0
+
+  ALL_HOOKS = [ :all_good, :died, :green, :initialize,
+                :post_initialize, :interrupt, :quit, :ran_command,
+                :red, :reset, :run_command, :updated, :waiting ]
 
   def self.options
     @@options ||= {}
@@ -68,10 +71,10 @@ class Autotest
     self.class.options
   end
 
+  HOOKS = Hash.new { |h,k| h[k] = [] }
+
   WINDOZE = /mswin|mingw/ =~ RbConfig::CONFIG['host_os']
   SEP = WINDOZE ? '&' : ';'
-
-  # @@discoveries = []
 
   def self.parse_options args = ARGV
     require 'optparse'
@@ -95,6 +98,7 @@ class Autotest
       BANNER
 
       opts.on "-d", "--debug", "Debug mode, for reporting bugs." do
+        require "pp"
         options[:debug] = true
       end
 
@@ -104,6 +108,14 @@ class Autotest
 
       opts.on "-q", "--quiet", "Be quiet." do
         options[:quiet] = true
+      end
+
+      opts.on("-r", "--rc CONF", String, "Override path to config file") do |o|
+        options[:rc] = Array(o)
+      end
+
+      opts.on("-w", "--warnings", "Turn on ruby warnings") do
+        $-w = true
       end
 
       opts.on "-h", "--help", "Show this." do
@@ -125,23 +137,23 @@ class Autotest
   end
 
   attr_writer :known_files
+  attr_accessor :extra_class_map
   attr_accessor :extra_files
-  attr_accessor :files_to_test
+  attr_accessor :failures
+  attr_accessor :files_to_test # TODO: remove in favor of failures?
+  attr_accessor :find_directories
   attr_accessor :find_order
   attr_accessor :interrupted
-  attr_accessor :failures
   attr_accessor :last_mtime
   attr_accessor :libs
   attr_accessor :output
   attr_accessor :prefix
-  attr_accessor :results
   attr_accessor :sleep
   attr_accessor :tainted
-  attr_accessor :testlib
-  attr_accessor :testprefix
-  attr_accessor :find_directories
-  attr_accessor :wants_to_quit
   attr_accessor :test_mappings
+  attr_accessor :testlib
+  attr_accessor :test_prefix
+  attr_accessor :wants_to_quit
 
   alias tainted? tainted
 
@@ -153,18 +165,20 @@ class Autotest
     # add/remove/clear accessor methods
     @exception_list = []
     @child = nil
-    self.test_mappings = []
+
+    self.extra_class_map   = {}
     self.extra_files       = []
     self.failures          = Hash.new { |h,k| h[k] = Hash.new { |h2,k2| h2[k2] = [] } }
     self.files_to_test     = new_hash_of_arrays
     self.find_order        = []
     self.known_files       = nil
-    self.libs              = %w[. lib test ../../minitest/dev/lib].join(File::PATH_SEPARATOR)
+    self.libs              = %w[. lib test].join(File::PATH_SEPARATOR)
     self.output            = $stderr
     self.prefix            = nil
     self.sleep             = 1
+    self.test_mappings     = []
+    self.test_prefix       = "gem 'minitest'"
     self.testlib           = "minitest/autorun" # TODO: rename
-    self.testprefix        = "gem 'minitest'" # TODO: rename
 
     specified_directories  = ARGV.reject { |arg| arg.start_with?("-") } # options are not directories
     self.find_directories  = specified_directories.empty? ? ['.'] : specified_directories
@@ -179,6 +193,36 @@ class Autotest
     self.add_mapping(/^test.*\/test_.*rb$/) do |filename, _|
       filename
     end
+
+    default_configs = [File.expand_path('~/.autotest'), './.autotest']
+    configs = options[:rc] || default_configs
+
+    configs.each do |f|
+      load f if File.exist? f
+    end
+  end
+
+  def debug
+    find_files_to_test
+
+    puts "Known test files:"
+    puts
+    pp files_to_test.keys.sort
+
+    class_map = self.class_map
+
+    puts
+    puts "Known class map:"
+    puts
+    pp class_map
+  end
+
+  def class_map
+    class_map = Hash[*self.find_order.grep(/^test/).map { |f| # TODO: ugly
+                       [path_to_classname(f), f]
+                     }.flatten]
+    class_map.merge! self.extra_class_map
+    class_map
   end
 
   ##
@@ -186,6 +230,9 @@ class Autotest
   # and carry on until killed.
 
   def run
+    hook :initialize
+    hook :post_initialize
+
     Minitest::Server.run self
 
     reset
@@ -200,6 +247,8 @@ class Autotest
         get_to_green
         if tainted? and not options[:no_full_after_failed] then
           rerun_all_tests
+        else
+          hook :all_good
         end
         wait_for_changes
       rescue Interrupt
@@ -207,8 +256,10 @@ class Autotest
         reset
       end
     end
-
+    hook :quit
     puts
+  rescue Exception => err
+    hook(:died, err) or raise err
   ensure
     Minitest::Server.stop
   end
@@ -234,9 +285,13 @@ class Autotest
     cmd = self.make_test_cmd self.files_to_test
     return if cmd.empty?
 
+    hook :run_command, cmd
+
     puts cmd unless options[:quiet]
 
     system cmd
+
+    hook :ran_command
   end
 
   ############################################################
@@ -252,12 +307,40 @@ class Autotest
       if self.interrupted then
         self.wants_to_quit = true
       else
-        puts "Interrupt a second time to quit"
-        self.interrupted = true
-        Kernel.sleep 1.5
+        unless hook :interrupt then
+          puts "Interrupt a second time to quit"
+          self.interrupted = true
+          Kernel.sleep 1.5
+        end
         raise Interrupt, nil # let the run loop catch it
       end
     end
+  end
+
+  ##
+  # Installs a sigquit handler
+
+  def add_sigquit_handler
+    trap 'QUIT' do
+      restart
+    end
+  end
+
+  def restart
+    Process.kill "KILL", @child if @child
+
+    cmd = [$0, *options[:args]]
+
+    index = $LOAD_PATH.index RbConfig::CONFIG["sitelibdir"]
+
+    if index then
+      extra = $LOAD_PATH[0...index]
+      cmd = [Gem.ruby, "-I", extra.join(":")] + cmd
+    end
+
+    puts cmd.join(" ") if options[:verbose]
+
+    exec(*cmd)
   end
 
   ##
@@ -266,6 +349,19 @@ class Autotest
 
   def all_good
     failures.empty?
+  end
+
+  ##
+  # Convert a path in a string, s, into a class name, changing
+  # underscores to CamelCase, etc.
+
+  def path_to_classname s
+    sep = File::SEPARATOR
+    f = s.sub(/^test#{sep}/, '').sub(/\.rb$/, '').split sep
+    f = f.map { |path| path.split(/_|(\d+)/).map { |seg| seg.capitalize }.join }
+    f = f.map { |path| path =~ /^Test/ ? path : "Test#{path}"  }
+
+    f.join '::'
   end
 
   ##
@@ -281,7 +377,7 @@ class Autotest
     targets.each do |target|
       order = []
       Find.find target do |f|
-        # Find.prune if f =~ self.exceptions
+        Find.prune if f =~ self.exceptions
         Find.prune if f =~ /^\.\/tmp/    # temp dir, used by isolate
 
         next unless File.file? f
@@ -313,7 +409,7 @@ class Autotest
     unless updated.empty? || self.last_mtime.to_i == 0 then
       p updated if options[:verbose]
 
-      # hook :updated, updated
+      hook :updated, updated
     end
 
     updated.map { |f,m| test_files_for f }.flatten.uniq.each do |filename|
@@ -342,6 +438,13 @@ class Autotest
   # Generate the commands to test the supplied files
 
   def make_test_cmd files_to_test
+    if options[:debug] then
+      puts "Files to test:"
+      puts
+      pp files_to_test
+      puts
+    end
+
     cmds = []
     full, partial = reorder(failures).partition { |k,v| v.empty? }
 
@@ -349,7 +452,7 @@ class Autotest
       classes = full.map {|k,v| k}.flatten.uniq
       classes.unshift testlib
       classes = classes.join " "
-      cmds << "#{ruby_cmd} -e \"#{testprefix}; %w[#{classes}].each { |f| require f }\" -- -a"
+      cmds << "#{ruby_cmd} -e \"#{test_prefix}; %w[#{classes}].each { |f| require f }\" -- -a"
     end
 
     unless partial.empty? then
@@ -386,6 +489,8 @@ class Autotest
   def rerun_all_tests
     reset
     run_tests
+
+    hook :all_good if all_good
   end
 
   ##
@@ -398,9 +503,11 @@ class Autotest
 
     self.interrupted   = false
     self.known_files   = nil
-    self.last_mtime    = Time.at 0
+    self.last_mtime    = T0
     self.tainted       = false
     self.wants_to_quit = false
+
+    hook :reset
   end
 
   ##
@@ -451,6 +558,7 @@ class Autotest
   # Sleep then look for files to test, until there are some.
 
   def wait_for_changes
+    hook :waiting
     Kernel.sleep self.sleep until find_files_to_test
   end
 
@@ -483,5 +591,116 @@ class Autotest
       @test_mappings.push [regexp, proc]
     end
     nil
+  end
+
+  ##
+  # Removed a file mapping matching +regexp+.
+
+  def remove_mapping regexp
+    @test_mappings.delete_if do |k,v|
+      k == regexp
+    end
+    nil
+  end
+
+  ##
+  # Clears all file mappings. This is DANGEROUS as it entirely
+  # disables autotest. You must add at least one file mapping that
+  # does a good job of rerunning appropriate tests.
+
+  def clear_mappings
+    @test_mappings.clear
+    nil
+  end
+
+  ############################################################
+  # Exceptions:
+
+  ##
+  # Adds +regexp+ to the list of exceptions for find_file. This must
+  # be called _before_ the exceptions are compiled.
+
+  def add_exception regexp
+    raise "exceptions already compiled" if defined? @exceptions
+
+    @exception_list << regexp
+    nil
+  end
+
+  ##
+  # Removes +regexp+ to the list of exceptions for find_file. This
+  # must be called _before_ the exceptions are compiled.
+
+  def remove_exception regexp
+    raise "exceptions already compiled" if defined? @exceptions
+    @exception_list.delete regexp
+    nil
+  end
+
+  ##
+  # Clears the list of exceptions for find_file. This must be called
+  # _before_ the exceptions are compiled.
+
+  def clear_exceptions
+    raise "exceptions already compiled" if defined? @exceptions
+    @exception_list.clear
+    nil
+  end
+
+  ##
+  # Return a compiled regexp of exceptions for find_files or nil if no
+  # filtering should take place. This regexp is generated from
+  # +exception_list+.
+
+  def exceptions
+    unless defined? @exceptions then
+      @exceptions = if @exception_list.empty? then
+                      nil
+                    else
+                      Regexp.union(*@exception_list)
+                    end
+    end
+
+    @exceptions
+  end
+
+  ############################################################
+  # Hooks:
+
+  ##
+  # Call the event hook named +name+, passing in optional args
+  # depending on the hook itself.
+  #
+  # Returns false if no hook handled the event.
+  #
+  # === Hook Writers!
+  #
+  # This executes all registered hooks <em>until one returns truthy</em>.
+  # Pay attention to the return value of your block!
+
+  def hook name, *args
+    deprecated = {
+      # none currently
+    }
+
+    if deprecated[name] and not HOOKS[name].empty? then
+      warn "hook #{name} has been deprecated, use #{deprecated[name]}"
+    end
+
+    HOOKS[name].any? { |plugin| plugin[self, *args] }
+  end
+
+  ##
+  # Add the supplied block to the available hooks, with the given
+  # name.
+
+  def self.add_hook name, &block
+    HOOKS[name] << block
+  end
+
+  add_hook :died do |at, err|
+    warn "Unhandled exception: #{err}"
+    warn err.backtrace.join("\n  ")
+    warn "Quitting"
   end
 end
