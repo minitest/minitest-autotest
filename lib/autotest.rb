@@ -57,6 +57,8 @@ require "rbconfig"
 
 class Autotest
 
+  TOPDIR = Dir.pwd + "/"
+
   T0 = Time.at 0
 
   ALL_HOOKS = [ :all_good, :died, :green, :initialize,

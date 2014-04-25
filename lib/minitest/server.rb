@@ -37,6 +37,7 @@ class Minitest
 
     def report
       warn "SERVER: done"
+      require "pp"
       pp failures
     end
   end
