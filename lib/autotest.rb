@@ -1,5 +1,4 @@
 require "find"
-require "minitest/server"
 require "rbconfig"
 
 ##
@@ -116,6 +115,10 @@ class Autotest
         options[:rc] = Array(o)
       end
 
+      opts.on("-p", "--port PORT", Integer, "Set the DRb port to use.") do |n|
+        ENV["DRBPORT"] = n.to_s
+      end
+
       opts.on("-w", "--warnings", "Turn on ruby warnings") do
         $-w = true
       end
@@ -191,8 +194,8 @@ class Autotest
       files_matching %r%^test/.*#{possible}$%
     end
 
-    # file in /test -> run it
-    self.add_mapping(/^test.*\/test_.*rb$/) do |filename, _|
+    # file in /test -> run it (ruby & rails styles)
+    self.add_mapping(/^test.*\/(test_.*|.*_test)\.rb$/) do |filename, _|
       filename
     end
 
@@ -235,6 +238,7 @@ class Autotest
     hook :initialize
     hook :post_initialize
 
+    require "minitest/server"
     Minitest::Server.run self
 
     reset

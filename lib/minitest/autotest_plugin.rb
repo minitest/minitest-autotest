@@ -1,5 +1,4 @@
 require "minitest"
-require "drb"
 
 module Minitest
   @autotest = false
@@ -13,6 +12,7 @@ module Minitest
   def self.plugin_autotest_init options
     if @autotest then
       puts "Adding Autotest Reporter"
+      require "minitest/server"
       self.reporter << Minitest::AutotestReporter.new
     end
   end
@@ -22,7 +22,7 @@ module Minitest
   class AutotestReporter < MiniTest::AbstractReporter
     def initialize
       DRb.start_service
-      uri = "druby://localhost:8787"
+      uri = Minitest::Server::URI
       @at_server = DRbObject.new_with_uri uri
       super
     end

@@ -1,12 +1,14 @@
 require 'drb'
 
-class Minitest
+module Minitest
   class Server
-    URI = "druby://localhost:8787"
+    port = ENV["DRBPORT"] || 8787
+    URI = "druby://:#{port}"
 
     def self.run autotest
       DRb.start_service URI, new(autotest)
-      # DRb.thread.join
+    rescue Errno::EADDRINUSE
+      abort "Address #{URI} is already in use. Use $DRBPORT or -p # to change."
     end
 
     def self.stop
