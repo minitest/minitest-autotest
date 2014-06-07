@@ -506,6 +506,7 @@ class Autotest
   def reset
     self.files_to_test.clear
     self.find_order.clear
+    self.failures.clear
 
     self.interrupted   = false
     self.known_files   = nil
