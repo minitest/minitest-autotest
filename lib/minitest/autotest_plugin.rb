@@ -4,27 +4,27 @@ module Minitest
   @autotest = false
 
   def self.plugin_autotest_options opts, options # :nodoc:
-    opts.on "-a", "--autotest", "Connect to autotest server." do
-      @autotest = true
+    opts.on "-a", "--autotest=pid", Integer, "Connect to autotest server w/ pid." do |s|
+      @autotest = s
     end
   end
 
   def self.plugin_autotest_init options
     if @autotest then
-      puts "Adding Autotest Reporter"
+      warn "Adding Autotest Reporter"
       require "minitest/server"
-      self.reporter << Minitest::AutotestReporter.new
+      self.reporter << Minitest::AutotestReporter.new(@autotest)
     end
   end
 end
 
 module Minitest
   class AutotestReporter < MiniTest::AbstractReporter
-    def initialize
+    def initialize pid
       DRb.start_service
-      uri = Minitest::Server::URI
+      uri = Minitest::Server.path(pid)
       @at_server = DRbObject.new_with_uri uri
-      super
+      super()
     end
 
     def start

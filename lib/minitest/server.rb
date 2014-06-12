@@ -1,14 +1,14 @@
-require 'drb'
+require "drb"
+require "tmpdir"
 
 module Minitest
   class Server
-    port = ENV["DRBPORT"] || 8787
-    URI = "druby://:#{port}"
+    def self.path pid = $$
+      "drbunix:#{Dir.tmpdir}/autotest.#{pid}"
+    end
 
     def self.run autotest
-      DRb.start_service URI, new(autotest)
-    rescue Errno::EADDRINUSE
-      abort "Address #{URI} is already in use. Use $DRBPORT or -p # to change."
+      DRb.start_service path, new(autotest)
     end
 
     def self.stop

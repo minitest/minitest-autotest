@@ -458,7 +458,7 @@ class Autotest
       classes = full.map {|k,v| k}.flatten.uniq
       classes.unshift testlib
       classes = classes.join " "
-      cmds << "#{ruby_cmd} -e \"#{test_prefix}; %w[#{classes}].each { |f| require f }\" -- -a"
+      cmds << "#{ruby_cmd} -e \"#{test_prefix}; %w[#{classes}].each { |f| require f }\" -- -a #{$$}"
     end
 
     unless partial.empty? then
