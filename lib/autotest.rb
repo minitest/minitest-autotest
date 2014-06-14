@@ -474,7 +474,7 @@ class Autotest
       loader = "%w[#{files.join " "}].each do |f| load f; end"
       re = Regexp.union(re).to_s.gsub(/-mix/, "")
 
-      cmds << "#{ruby_cmd} -e '#{loader}' -- -a -n '/#{re}/'"
+      cmds << "#{ruby_cmd} -e '#{loader}' -- -a #{$$} -n '/#{re}/'"
     end
 
     cmds.join "#{SEP} "
