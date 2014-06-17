@@ -175,8 +175,7 @@ class Autotest
     self.extra_files       = []
     self.failures          = Hash.new { |h,k| h[k] = Hash.new { |h2,k2| h2[k2] = [] } }
     self.files_to_test     = new_hash_of_arrays
-    self.find_order        = []
-    self.known_files       = nil
+    reset_find_order
     self.libs              = %w[. lib test].join(File::PATH_SEPARATOR)
     self.output            = $stderr
     self.prefix            = nil
@@ -378,7 +377,7 @@ class Autotest
   def find_files
     result = {}
     targets = self.find_directories + self.extra_files
-    self.find_order.clear
+    reset_find_order
 
     targets.each do |target|
       order = []
@@ -505,16 +504,20 @@ class Autotest
 
   def reset
     self.files_to_test.clear
-    self.find_order.clear
+    reset_find_order
     self.failures.clear
 
     self.interrupted   = false
-    self.known_files   = nil
     self.last_mtime    = T0
     self.tainted       = false
     self.wants_to_quit = false
 
     hook :reset
+  end
+
+  def reset_find_order
+    self.find_order = []
+    self.known_files = nil
   end
 
   ##
