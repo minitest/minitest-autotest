@@ -19,7 +19,7 @@ module Minitest
 end
 
 module Minitest
-  class AutotestReporter < MiniTest::AbstractReporter
+  class AutotestReporter < Minitest::AbstractReporter
     def initialize pid
       DRb.start_service
       uri = Minitest::Server.path(pid)
