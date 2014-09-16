@@ -717,7 +717,11 @@ class Autotest
   ############################################################
   # Server Methods:
 
-  def result file, klass, method, fails, assertions, time
+  def minitest_start
+    self.failures.clear
+  end
+
+  def minitest_result file, klass, method, fails, assertions, time
     fails.reject! { |fail| Minitest::Skip === fail }
 
     unless fails.empty?
