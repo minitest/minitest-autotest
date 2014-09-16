@@ -1,25 +1,27 @@
 require "drb"
 require "tmpdir"
+require "minitest"
 
 module Minitest
   class Server
+    TOPDIR = Dir.pwd + "/"
+
     def self.path pid = $$
-      "drbunix:#{Dir.tmpdir}/autotest.#{pid}"
+      "drbunix:#{Dir.tmpdir}/minitest.#{pid}"
     end
 
-    def self.run autotest
-      DRb.start_service path, new(autotest)
+    def self.run client
+      DRb.start_service path, new(client)
     end
 
     def self.stop
       DRb.stop_service
     end
 
-    attr_accessor :autotest, :failures
+    attr_accessor :client
 
-    def initialize autotest
-      self.autotest = autotest
-      self.failures = autotest.failures
+    def initialize client
+      self.client = client
     end
 
     def quit
@@ -27,18 +29,17 @@ module Minitest
     end
 
     def start
-      warn "SERVER: Starting"
-      failures.clear
+      client.failures.clear # TODO: push down to subclass
     end
 
-    def failure file, class_name, test_name
-      file = file.sub(/^#{Autotest::TOPDIR}/, "")
-      autotest.tainted = true
-      failures[file][class_name] << test_name
+    def result file, klass, method, fails, assertions, time
+      file = file.sub(/^#{TOPDIR}/, "")
+
+      client.result file, klass, method, fails, assertions, time
     end
 
     def report
-      warn "SERVER: done"
+      # do nothing
     end
   end
 end

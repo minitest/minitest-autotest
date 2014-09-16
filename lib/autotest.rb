@@ -457,7 +457,7 @@ class Autotest
       classes = full.map {|k,v| k}.flatten.uniq
       classes.unshift testlib
       classes = classes.join " "
-      cmds << "#{ruby_cmd} -e \"#{test_prefix}; %w[#{classes}].each { |f| require f }\" -- -a #{$$}"
+      cmds << "#{ruby_cmd} -e \"#{test_prefix}; %w[#{classes}].each { |f| require f }\" -- --server #{$$}"
     end
 
     unless partial.empty? then
@@ -712,5 +712,17 @@ class Autotest
     warn "Unhandled exception: #{err}"
     warn err.backtrace.join("\n  ")
     warn "Quitting"
+  end
+
+  ############################################################
+  # Server Methods:
+
+  def result file, klass, method, fails, assertions, time
+    fails.reject! { |fail| Minitest::Skip === fail }
+
+    unless fails.empty?
+      self.tainted = true
+      self.failures[file][klass] << method
+    end
   end
 end
