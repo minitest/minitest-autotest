@@ -10,6 +10,8 @@ Hoe.plugin :rdoc
 Hoe.spec "minitest-autotest" do
   developer "Ryan Davis", "ryand-ruby@zenspider.com"
   license "MIT"
+
+  dependency "minitest-server", "~> 1.0"
 end
 
 # vim: syntax=ruby

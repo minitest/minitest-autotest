@@ -17,7 +17,5 @@ lib/autotest/rcov.rb
 lib/autotest/restart.rb
 lib/autotest/timestamp.rb
 lib/minitest/autotest.rb
-lib/minitest/autotest_plugin.rb
-lib/minitest/server.rb
 test/test_minitest/test_autorun.rb
 test/test_minitest/test_good.rb
