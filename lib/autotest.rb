@@ -115,10 +115,6 @@ class Autotest
         options[:rc] = Array(o)
       end
 
-      opts.on("-p", "--port PORT", Integer, "Set the DRb port to use.") do |n|
-        ENV["DRBPORT"] = n.to_s
-      end
-
       opts.on("-w", "--warnings", "Turn on ruby warnings") do
         $-w = true
       end
