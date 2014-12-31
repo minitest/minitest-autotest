@@ -1,3 +1,9 @@
+=== 1.0.0 / 2014-12-30
+
+* 1 bug fix:
+
+  * Fixed cmdline build to use --server, not dead -a. (halostatue)
+
 === 1.0.0.b.1 / 2014-09-16
 
 * 1 major enhancement
