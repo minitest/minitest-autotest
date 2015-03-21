@@ -60,9 +60,9 @@ class Autotest
 
   T0 = Time.at 0
 
-  ALL_HOOKS = [ :all_good, :died, :green, :initialize,
-                :post_initialize, :interrupt, :quit, :ran_command,
-                :red, :reset, :run_command, :updated, :waiting ]
+  ALL_HOOKS = [ :all_good, :died, :initialize, :post_initialize,
+                :interrupt, :quit, :ran_command, :reset,
+                :run_command, :updated, :waiting ]
 
   def self.options
     @@options ||= {}
