@@ -332,6 +332,8 @@ class Autotest
   end
 
   def restart
+    Minitest::Server.stop
+       
     Process.kill "KILL", @child if @child
 
     cmd = [$0, *options[:args]]
