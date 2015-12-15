@@ -1,3 +1,9 @@
+=== 1.0.2 / 2015-12-15
+
+* 1 bug fix:
+
+  * Fix autotest/restart to stop the server in between. (deivid-rodriguez)
+
 === 1.0.1 / 2015-04-13
 
 * 2 bug fixes:
