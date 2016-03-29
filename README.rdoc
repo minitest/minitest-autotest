@@ -78,6 +78,14 @@ Then add the following to the ".autotest" file:
 
     require "autotest/spec"
 
+If you use autotest/bundler, include minitest-autotest in your Gemfile:
+
+    gem "minitest-autotest"
+
+Otherwise, you may get this error message when running autotest:
+
+    invalid option: --server
+
 == REQUIREMENTS:
 
 * minitest 5+
