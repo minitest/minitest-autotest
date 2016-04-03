@@ -27,8 +27,6 @@ require "rbconfig"
 #
 # The available hooks are listed in +ALL_HOOKS+.
 #
-# See example_dot_autotest.rb for more details.
-#
 # If a hook returns a true value, it signals to autotest that the hook
 # was handled and should not continue executing hooks.
 #
