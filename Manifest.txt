@@ -4,6 +4,7 @@ Manifest.txt
 README.rdoc
 Rakefile
 bin/autotest
+example_dot_autotest.rb
 lib/autotest.rb
 lib/autotest/autoupdate.rb
 lib/autotest/bundler.rb
