@@ -473,7 +473,7 @@ class Autotest
       end
 
       loader = "%w[#{files.join " "}].each do |f| load f; end"
-      re = Regexp.union(re).to_s.gsub(/-mix/, "")
+      re = Regexp.union(re).to_s.gsub(/-mix/, "").gsub(/'/, ".")
 
       cmds << "#{ruby_cmd} -e '#{loader}' -- --server #{$$} -n '/#{re}/'"
     end
