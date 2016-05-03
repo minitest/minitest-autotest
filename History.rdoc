@@ -1,3 +1,10 @@
+=== 1.0.3 / 2016-05-02
+
+* 2 bug fixes:
+
+  * Added example_dot_autotest.rb and rake rule to regenerate it.
+  * Fix single quotes in test names for regexp used on cmdline.
+
 === 1.0.2 / 2015-12-15
 
 * 1 bug fix:
