@@ -539,7 +539,7 @@ class Autotest
   # Returns the base of the ruby command.
 
   def ruby_cmd
-    "#{prefix}#{ruby} -I#{libs} -rubygems"
+    "#{prefix}#{ruby} -I#{libs} -rrubygems"
   end
 
   ##
