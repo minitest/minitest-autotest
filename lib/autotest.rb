@@ -1,6 +1,8 @@
 require "find"
 require "rbconfig"
 
+require "path_expander"
+
 ##
 # Autotest continuously scans the files in your project for changes
 # and runs the appropriate tests.  Test failures are run until they
@@ -64,13 +66,7 @@ class Autotest
                 :interrupt, :quit, :ran_command, :reset,
                 :run_command, :updated, :waiting ]
 
-  def self.options
-    @@options ||= {}
-  end
-
-  def options
-    self.class.options
-  end
+  attr_accessor :options
 
   HOOKS = Hash.new { |h,k| h[k] = [] }
 
@@ -125,16 +121,19 @@ class Autotest
       end
     end.parse! args
 
-    Autotest.options.merge! options
-
     options
   end
 
   ##
   # Initialize and run the system.
 
-  def self.run
-    new.run
+  def self.run args = ARGV
+    expander = PathExpander.new args, "**/*.rb"
+    files = expander.process
+
+    autotest = new parse_options args
+    autotest.extra_files = files
+    autotest.run
   end
 
   attr_writer :known_files
@@ -161,12 +160,13 @@ class Autotest
   ##
   # Initialize the instance and then load the user's .autotest file, if any.
 
-  def initialize
+  def initialize options
     # these two are set directly because they're wrapped with
     # add/remove/clear accessor methods
     @exception_list = []
     @child = nil
 
+    self.options           = options
     self.extra_class_map   = {}
     self.extra_files       = []
     self.failures          = Hash.new { |h,k| h[k] = Hash.new { |h2,k2| h2[k2] = [] } }
@@ -180,8 +180,7 @@ class Autotest
     self.test_prefix       = "gem 'minitest'"
     self.testlib           = "minitest/autorun" # TODO: rename
 
-    specified_directories  = ARGV.reject { |arg| arg.start_with?("-") } # options are not directories
-    self.find_directories  = specified_directories.empty? ? ['.'] : specified_directories
+    self.find_directories  = ['.']
 
     # file in /lib -> run test in /test
     self.add_mapping(/^lib\/.*\.rb$/) do |filename, _|
@@ -397,6 +396,7 @@ class Autotest
         result[filename] = File.stat(filename).mtime rescue next
         order << filename
       end
+
       self.find_order.push(*order.sort)
     end
 
@@ -464,6 +464,7 @@ class Autotest
 
     unless partial.empty? then
       files = partial.map(&:first).sort # no longer a hash because of partition
+      files.select! { |path| File.file? path } # filter out (eval) and the like
       re = []
 
       partial.each do |path, klasses|
@@ -539,7 +540,7 @@ class Autotest
   # Returns the base of the ruby command.
 
   def ruby_cmd
-    "#{prefix}#{ruby} -I#{libs} -rubygems"
+    "#{prefix}#{ruby} -I#{libs}"
   end
 
   ##

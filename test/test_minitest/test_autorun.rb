@@ -1,5 +1,11 @@
 require "minitest/autorun"
 
+class Foo
+  def raises
+    raise "blah"
+  end
+end
+
 class FooTest < Minitest::Test
   def test_pass
     assert true
@@ -15,7 +21,15 @@ class FooTest < Minitest::Test
     end
 
     def test_error
-      raise "nope"
+      Foo.new.raises
+    end
+
+    def assert_bad_thingy
+      Foo.new.raises
+    end
+
+    def test_indirect_error
+      assert_bad_thingy
     end
   end
 end
