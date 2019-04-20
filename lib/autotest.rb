@@ -99,6 +99,10 @@ class Autotest
         options[:debug] = true
       end
 
+      opts.on "-f", "--focus", "Focus mode, only run named tests." do
+        options[:focus] = true
+      end
+
       opts.on "-v", "--verbose", "Be annoyingly verbose (debugs .autotest)." do
         options[:verbose] = true
       end
@@ -132,6 +136,18 @@ class Autotest
     files = expander.process
 
     autotest = new parse_options args
+
+    if autotest.options[:debug] then
+      puts
+      puts "options:"
+      puts
+      pp autotest.options
+      puts "files:"
+      puts
+      pp files
+      puts
+    end
+
     autotest.extra_files = files
     autotest.run
   end
@@ -377,7 +393,13 @@ class Autotest
 
   def find_files
     result = {}
-    targets = self.find_directories + self.extra_files
+
+    targets = if options[:focus] then
+                self.extra_files
+              else
+                self.find_directories + self.extra_files
+              end
+
     reset_find_order
 
     targets.each do |target|
