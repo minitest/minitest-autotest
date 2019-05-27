@@ -1,3 +1,17 @@
+=== 1.1.0 / 2019-05-26
+
+* 4 minor enhancements:
+
+  * Added --focus mode that lets you only monitor/test specified files.
+  * Move Autotest.parse_options from bin/autotest to Autotest.run.
+  * Push options down to instance variable. No globals. Passed to #initialize.
+  * Use path_expander to process cmdline args.
+
+* 2 bug fixes:
+
+  * Filter out non-files (eg "(eval)") to avoid spurious errors.
+  * Remove explicit -rubygems flag. Broken in ruby 2.5 for some reason.
+
 === 1.0.3 / 2016-05-02
 
 * 2 bug fixes:
