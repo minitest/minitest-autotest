@@ -1,3 +1,9 @@
+=== 1.1.1 / 2019-05-29
+
+* 1 bug fix:
+
+  * Fixed missing dependency on path_expander. (blowmage)
+
 === 1.1.0 / 2019-05-26
 
 * 4 minor enhancements:
