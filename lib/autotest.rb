@@ -133,7 +133,7 @@ class Autotest
 
   def self.run args = ARGV
     expander = PathExpander.new args, "**/*.rb"
-    files = expander.process
+    files = expander.process.to_a
 
     autotest = new parse_options args
 

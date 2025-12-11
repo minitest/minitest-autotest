@@ -12,7 +12,7 @@ Hoe.spec "minitest-autotest" do
   license "MIT"
 
   dependency "minitest-server", "~> 1.0"
-  dependency "path_expander", "~> 1.0"
+  dependency "path_expander", "~> 2.0"
 end
 
 desc "update example_dot_autotest.rb with all possible constants"
