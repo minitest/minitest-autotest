@@ -11,8 +11,7 @@ Hoe.spec "minitest-autotest" do
   developer "Ryan Davis", "ryand-ruby@zenspider.com"
   license "MIT"
 
-  dependency "minitest-server", "~> 1.0"
-  dependency "path_expander", "~> 2.0"
+  dependency "minitest", "~> 6.0"
 end
 
 desc "update example_dot_autotest.rb with all possible constants"

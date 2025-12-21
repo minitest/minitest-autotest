@@ -1,7 +1,7 @@
 require "find"
 require "rbconfig"
 
-require "path_expander"
+require "minitest/path_expander"
 
 ##
 # Autotest continuously scans the files in your project for changes
@@ -132,8 +132,11 @@ class Autotest
   # Initialize and run the system.
 
   def self.run args = ARGV
-    expander = PathExpander.new args, "**/*.rb"
+    expander = Minitest::VendoredPathExpander.new args, "**/*.rb"
     files = expander.process.to_a
+
+    require "minitest"
+    Minitest.load :server
 
     autotest = new parse_options args
 
@@ -193,7 +196,7 @@ class Autotest
     self.prefix            = nil
     self.sleep             = 1
     self.test_mappings     = []
-    self.test_prefix       = "gem 'minitest'"
+    self.test_prefix       = "gem 'minitest'; require 'minitest'; Minitest.load :server"
     self.testlib           = "minitest/autorun" # TODO: rename
 
     self.find_directories  = ['.']
