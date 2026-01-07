@@ -1,3 +1,11 @@
+=== 1.2.1 / 2026-01-06
+
+* 3 bug fixes:
+
+  * Bumped the minitest dependency to MT6.
+  * Dropped path_expander dependency, using vendored version in MT6.
+  * MT6: Needed to load the server plugin via test_prefix.
+
 === 1.2.0 / 2025-12-11
 
 * 1 minor enhancement:
@@ -55,4 +63,3 @@
 * 1 major enhancement
 
   * Birthday!
-
