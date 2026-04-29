@@ -1,5 +1,5 @@
-#!/usr/bin/env ruby -w
+#!/usr/bin/env -S ruby -w
 
-require 'autotest'
+require_relative "../lib/autotest"
 
 Autotest.run
