@@ -132,13 +132,14 @@ class Autotest
   # Initialize and run the system.
 
   def self.run args = ARGV
+    ENV["MINITEST_SERVER"] = "1"
+    require "minitest"
+
+    autotest = new parse_options args
     expander = Minitest::VendoredPathExpander.new args, "**/*.rb"
     files = expander.process.to_a
 
-    require "minitest"
-    Minitest.load :server
-
-    autotest = new parse_options args
+    autotest.extra_files = files
 
     if autotest.options[:debug] then
       puts
@@ -151,7 +152,6 @@ class Autotest
       puts
     end
 
-    autotest.extra_files = files
     autotest.run
   end
 

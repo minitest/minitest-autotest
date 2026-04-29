@@ -33,3 +33,28 @@ class FooTest < Minitest::Test
     end
   end
 end
+
+require "autotest"
+class TestAutotest < Minitest::Test
+  class AutotestSUT < ::Autotest
+    def run = self # don't actually run
+  end
+
+  def test_cls_run
+    x = nil
+    assert_output "" do
+      x = AutotestSUT.run %w[ --rc dot_autotest ]
+    end
+
+    assert_instance_of AutotestSUT, x
+    assert_equal ["dot_autotest"], x.options[:rc]
+
+    x.last_mtime = Time.now
+    assert_nil x.find_files_to_test
+
+    x.last_mtime = Time.at 0
+    refute_nil x.find_files_to_test
+
+    assert_includes x.files_to_test, "test/test_minitest/test_autorun.rb"
+  end
+end
